@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AAPL Revenue Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: #0a0a0a;
+            color: #e5e5e5;
+            min-height: 100vh;
+        }
+
+        .header {
+            padding: 2rem 2rem 1rem;
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+        .header h1 { font-size: 1.75rem; font-weight: 600; color: #fff; }
+        .header h1 span { color: #a78bfa; }
+        .header p { color: #888; margin-top: 0.25rem; font-size: 0.95rem; }
+
+        .dashboard {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 1rem 2rem 2rem;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+        }
+
+        .card {
+            background: #161616;
+            border: 1px solid #262626;
+            border-radius: 12px;
+            padding: 1.5rem;
+        }
+        .card-title {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #888;
+            margin-bottom: 1rem;
+        }
+        .chart-card { grid-column: 1 / -1; }
+        .chart-container { position: relative; height: 340px; }
+        .table-card { grid-column: 1 / -1; }
+
+        /* KPI grid */
+        #kpi-grid {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1rem;
+        }
+        .kpi {
+            background: #161616;
+            border: 1px solid #262626;
+            border-radius: 12px;
+            padding: 1.25rem;
+        }
+        .kpi-label {
+            font-size: 0.75rem;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .kpi-value {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: #fff;
+            margin-top: 0.35rem;
+        }
+        .kpi-sub { font-size: 0.8rem; margin-top: 0.25rem; }
+        .kpi-sub.positive { color: #4ade80; }
+
+        /* Table */
+        table { width: 100%; border-collapse: collapse; }
+        th {
+            text-align: left;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #888;
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid #262626;
+        }
+        td {
+            padding: 0.85rem 1rem;
+            border-bottom: 1px solid #1e1e1e;
+            font-size: 0.95rem;
+        }
+        tr:last-child td { border-bottom: none; }
+        .text-right { text-align: right; }
+        .badge {
+            display: inline-block;
+            padding: 0.15rem 0.5rem;
+            border-radius: 999px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+        .badge-green { background: rgba(74,222,128,0.12); color: #4ade80; }
+        .badge-red   { background: rgba(248,113,113,0.12); color: #f87171; }
+
+        /* Loading / Error states */
+        .loading-overlay {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 4rem 2rem;
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+        .spinner {
+            width: 40px; height: 40px;
+            border: 3px solid #262626;
+            border-top-color: #a78bfa;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .loading-overlay p { color: #888; margin-top: 1rem; font-size: 0.95rem; }
+
+        .error-banner {
+            max-width: 1100px;
+            margin: 2rem auto;
+            padding: 1rem 2rem;
+            background: rgba(248,113,113,0.08);
+            border: 1px solid rgba(248,113,113,0.25);
+            border-radius: 12px;
+            color: #f87171;
+            font-size: 0.95rem;
+        }
+
+        .source-note {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 0 2rem 2rem;
+            font-size: 0.8rem;
+            color: #555;
+        }
+
+        .hidden { display: none !important; }
+
+        @media (max-width: 700px) {
+            .dashboard { grid-template-columns: 1fr; padding: 1rem; }
+            #kpi-grid { grid-template-columns: repeat(2, 1fr); padding: 0 1rem; }
+            .header { padding: 1.5rem 1rem 0.5rem; }
+            .source-note { padding: 0 1rem 1.5rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1><span>AAPL</span> Revenue Dashboard</h1>
+        <p>Apple Inc. &mdash; Quarterly revenue pulled live via Daloopa MCP</p>
+    </div>
+
+    <!-- Loading state -->
+    <div id="loading" class="loading-overlay">
+        <div class="spinner"></div>
+        <p>Fetching revenue data from Daloopa MCP&hellip;</p>
+    </div>
+
+    <!-- Error state -->
+    <div id="error" class="error-banner hidden"></div>
+
+    <!-- Dashboard content (hidden until data loads) -->
+    <div id="content" class="hidden">
+        <div id="kpi-grid"></div>
+
+        <div class="dashboard">
+            <div class="card chart-card">
+                <div class="card-title">Revenue Trend (Billions USD)</div>
+                <div class="chart-container">
+                    <canvas id="revenueChart"></canvas>
+                </div>
+            </div>
+
+            <div class="card chart-card">
+                <div class="card-title">Quarter-over-Quarter Growth</div>
+                <div class="chart-container" style="height:220px;">
+                    <canvas id="growthChart"></canvas>
+                </div>
+            </div>
+
+            <div class="card table-card">
+                <div class="card-title">Quarterly Breakdown</div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Quarter</th>
+                            <th class="text-right">Revenue</th>
+                            <th class="text-right">QoQ Change</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-body"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="source-note">
+            Data sourced live from Apple Inc. financial filings via the Daloopa MCP server.
+        </div>
+    </div>
+
+    <script>
+        // ── Helpers ──────────────────────────────────────────────────
+
+        function formatQuarter(period) {
+            // "2025Q1" -> "Q1 2025"
+            const match = period.match(/(\d{4})Q(\d)/);
+            return match ? `Q${match[2]} ${match[1]}` : period;
+        }
+
+        function formatBillions(val) {
+            const b = val / 1e9;
+            return b >= 1 ? `$${b.toFixed(1)}B` : `$${(val / 1e6).toFixed(0)}M`;
+        }
+
+        function pctChange(curr, prev) {
+            if (!prev || prev === 0) return null;
+            return ((curr - prev) / Math.abs(prev)) * 100;
+        }
+
+        // ── Render functions ─────────────────────────────────────────
+
+        function renderKPIs(quarters, values) {
+            const grid = document.getElementById("kpi-grid");
+            grid.innerHTML = quarters.map((q, i) => {
+                const change = i > 0 ? pctChange(values[i], values[i - 1]) : null;
+                const changeHtml = change !== null
+                    ? `<div class="kpi-sub ${change >= 0 ? "positive" : ""}">${change >= 0 ? "+" : ""}${change.toFixed(0)}% QoQ</div>`
+                    : "";
+                return `<div class="kpi">
+                    <div class="kpi-label">${formatQuarter(q)}</div>
+                    <div class="kpi-value">${formatBillions(values[i])}</div>
+                    ${changeHtml}
+                </div>`;
+            }).join("");
+        }
+
+        function renderRevenueChart(quarters, values) {
+            const data = values.map(v => v / 1e9);
+            const minVal = Math.floor(Math.min(...data) * 0.9);
+            new Chart(document.getElementById("revenueChart"), {
+                type: "bar",
+                data: {
+                    labels: quarters.map(formatQuarter),
+                    datasets: [{
+                        label: "Revenue ($B)",
+                        data,
+                        backgroundColor: data.map((_, i) =>
+                            i === data.length - 1 ? "rgba(167,139,250,0.85)" : "rgba(167,139,250,0.45)"
+                        ),
+                        borderColor: "rgba(167,139,250,1)",
+                        borderWidth: 1,
+                        borderRadius: 6,
+                        maxBarThickness: 80
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { callbacks: { label: ctx => `$${ctx.parsed.y.toFixed(1)}B` } }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            min: minVal,
+                            grid: { color: "#1e1e1e" },
+                            ticks: { color: "#888", callback: v => `$${v}B` }
+                        },
+                        x: { grid: { display: false }, ticks: { color: "#888" } }
+                    }
+                }
+            });
+        }
+
+        function renderGrowthChart(quarters, values) {
+            const growth = values.map((v, i) => i > 0 ? pctChange(v, values[i - 1]) : 0);
+            new Chart(document.getElementById("growthChart"), {
+                type: "line",
+                data: {
+                    labels: quarters.map(formatQuarter),
+                    datasets: [{
+                        label: "QoQ Growth (%)",
+                        data: growth,
+                        borderColor: "#4ade80",
+                        backgroundColor: "rgba(74,222,128,0.1)",
+                        fill: true,
+                        tension: 0.35,
+                        pointRadius: 5,
+                        pointBackgroundColor: "#4ade80",
+                        pointBorderColor: "#0a0a0a",
+                        pointBorderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { callbacks: { label: ctx => `${ctx.parsed.y >= 0 ? "+" : ""}${ctx.parsed.y.toFixed(1)}%` } }
+                    },
+                    scales: {
+                        y: {
+                            grid: { color: "#1e1e1e" },
+                            ticks: { color: "#888", callback: v => `${v}%` }
+                        },
+                        x: { grid: { display: false }, ticks: { color: "#888" } }
+                    }
+                }
+            });
+        }
+
+        function renderTable(quarters, values) {
+            const tbody = document.getElementById("table-body");
+            tbody.innerHTML = quarters.map((q, i) => {
+                const change = i > 0 ? pctChange(values[i], values[i - 1]) : null;
+                const badgeClass = change !== null ? (change >= 0 ? "badge-green" : "badge-red") : "";
+                const changeText = change !== null
+                    ? `<span class="badge ${badgeClass}">${change >= 0 ? "+" : ""}${change.toFixed(1)}%</span>`
+                    : "&mdash;";
+                return `<tr>
+                    <td>${formatQuarter(q)}</td>
+                    <td class="text-right">${formatBillions(values[i])}</td>
+                    <td class="text-right">${changeText}</td>
+                </tr>`;
+            }).join("");
+        }
+
+        // ── Main ─────────────────────────────────────────────────────
+
+        async function loadDashboard() {
+            const loading = document.getElementById("loading");
+            const error = document.getElementById("error");
+            const content = document.getElementById("content");
+
+            try {
+                const resp = await fetch("/api/revenue");
+                const json = await resp.json();
+
+                if (!resp.ok || !json.success) {
+                    throw new Error(json.error || `Server returned ${resp.status}`);
+                }
+
+                const datapoints = json.data;
+                if (!datapoints || datapoints.length === 0) {
+                    throw new Error("No revenue data returned from Daloopa.");
+                }
+
+                // Sort by period ascending
+                datapoints.sort((a, b) => (a.period || "").localeCompare(b.period || ""));
+
+                const quarters = datapoints.map(d => d.period);
+                const values = datapoints.map(d =>
+                    d.value ?? d.quarterized_value ?? 0
+                );
+
+                loading.classList.add("hidden");
+                content.classList.remove("hidden");
+
+                renderKPIs(quarters, values);
+                renderRevenueChart(quarters, values);
+                renderGrowthChart(quarters, values);
+                renderTable(quarters, values);
+            } catch (err) {
+                loading.classList.add("hidden");
+                error.classList.remove("hidden");
+                error.textContent = `Failed to load data: ${err.message}`;
+            }
+        }
+
+        document.addEventListener("DOMContentLoaded", loadDashboard);
+    </script>
+</body>
+</html>
