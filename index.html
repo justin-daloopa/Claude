@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AAPL Revenue Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: #0a0a0a;
+            color: #e5e5e5;
+            min-height: 100vh;
+        }
+
+        .header {
+            padding: 2rem 2rem 1rem;
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        .header h1 {
+            font-size: 1.75rem;
+            font-weight: 600;
+            color: #fff;
+        }
+
+        .header h1 span {
+            color: #a78bfa;
+        }
+
+        .header p {
+            color: #888;
+            margin-top: 0.25rem;
+            font-size: 0.95rem;
+        }
+
+        .dashboard {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 1rem 2rem 2rem;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+        }
+
+        .card {
+            background: #161616;
+            border: 1px solid #262626;
+            border-radius: 12px;
+            padding: 1.5rem;
+        }
+
+        .card-title {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #888;
+            margin-bottom: 1rem;
+        }
+
+        .chart-card {
+            grid-column: 1 / -1;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 340px;
+        }
+
+        .kpi-grid {
+            grid-column: 1 / -1;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1rem;
+        }
+
+        .kpi {
+            background: #161616;
+            border: 1px solid #262626;
+            border-radius: 12px;
+            padding: 1.25rem;
+        }
+
+        .kpi-label {
+            font-size: 0.75rem;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .kpi-value {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: #fff;
+            margin-top: 0.35rem;
+        }
+
+        .kpi-sub {
+            font-size: 0.8rem;
+            margin-top: 0.25rem;
+        }
+
+        .kpi-sub.positive {
+            color: #4ade80;
+        }
+
+        .table-card {
+            grid-column: 1 / -1;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            text-align: left;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #888;
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid #262626;
+        }
+
+        td {
+            padding: 0.85rem 1rem;
+            border-bottom: 1px solid #1e1e1e;
+            font-size: 0.95rem;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        .text-right {
+            text-align: right;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.15rem 0.5rem;
+            border-radius: 999px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .badge-green {
+            background: rgba(74, 222, 128, 0.12);
+            color: #4ade80;
+        }
+
+        .source-note {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 0 2rem 2rem;
+            font-size: 0.8rem;
+            color: #555;
+        }
+
+        .source-note a {
+            color: #666;
+        }
+
+        @media (max-width: 700px) {
+            .dashboard {
+                grid-template-columns: 1fr;
+                padding: 1rem;
+            }
+            .kpi-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .header {
+                padding: 1.5rem 1rem 0.5rem;
+            }
+            .source-note {
+                padding: 0 1rem 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1><span>AAPL</span> Revenue Dashboard</h1>
+        <p>Apple Inc. &mdash; Quarterly revenue for the past 4 quarters (data sourced via Daloopa)</p>
+    </div>
+
+    <div class="kpi-grid" style="max-width:1100px;margin:0 auto;padding:0 2rem;">
+        <div class="kpi">
+            <div class="kpi-label">Q2 FY2025</div>
+            <div class="kpi-value">$95.4B</div>
+            <div class="kpi-sub positive">+5% YoY</div>
+        </div>
+        <div class="kpi">
+            <div class="kpi-label">Q3 FY2025</div>
+            <div class="kpi-value">$94.0B</div>
+            <div class="kpi-sub positive">+10% YoY</div>
+        </div>
+        <div class="kpi">
+            <div class="kpi-label">Q4 FY2025</div>
+            <div class="kpi-value">$102.5B</div>
+            <div class="kpi-sub positive">+8% YoY</div>
+        </div>
+        <div class="kpi">
+            <div class="kpi-label">Q1 FY2026</div>
+            <div class="kpi-value">$143.8B</div>
+            <div class="kpi-sub positive">+16% YoY</div>
+        </div>
+    </div>
+
+    <div class="dashboard">
+        <div class="card chart-card">
+            <div class="card-title">Revenue Trend (Billions USD)</div>
+            <div class="chart-container">
+                <canvas id="revenueChart"></canvas>
+            </div>
+        </div>
+
+        <div class="card chart-card" style="grid-column: 1 / -1;">
+            <div class="card-title">YoY Growth Rate</div>
+            <div class="chart-container" style="height:220px;">
+                <canvas id="growthChart"></canvas>
+            </div>
+        </div>
+
+        <div class="card table-card">
+            <div class="card-title">Quarterly Breakdown</div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Quarter</th>
+                        <th>Period Ended</th>
+                        <th class="text-right">Revenue</th>
+                        <th class="text-right">EPS</th>
+                        <th class="text-right">YoY Growth</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Q2 FY2025</td>
+                        <td>Mar 29, 2025</td>
+                        <td class="text-right">$95.36B</td>
+                        <td class="text-right">$1.65</td>
+                        <td class="text-right"><span class="badge badge-green">+5%</span></td>
+                    </tr>
+                    <tr>
+                        <td>Q3 FY2025</td>
+                        <td>Jun 28, 2025</td>
+                        <td class="text-right">$94.00B</td>
+                        <td class="text-right">$1.57</td>
+                        <td class="text-right"><span class="badge badge-green">+10%</span></td>
+                    </tr>
+                    <tr>
+                        <td>Q4 FY2025</td>
+                        <td>Sep 27, 2025</td>
+                        <td class="text-right">$102.50B</td>
+                        <td class="text-right">$1.85</td>
+                        <td class="text-right"><span class="badge badge-green">+8%</span></td>
+                    </tr>
+                    <tr>
+                        <td>Q1 FY2026</td>
+                        <td>Dec 31, 2025</td>
+                        <td class="text-right">$143.76B</td>
+                        <td class="text-right">$2.84</td>
+                        <td class="text-right"><span class="badge badge-green">+16%</span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="source-note">
+        Data sourced from Apple Inc. earnings press releases via Daloopa financial data platform.
+    </div>
+
+    <script>
+        const quarters = ['Q2 FY2025', 'Q3 FY2025', 'Q4 FY2025', 'Q1 FY2026'];
+        const revenue = [95.36, 94.00, 102.50, 143.76];
+        const growth = [5, 10, 8, 16];
+
+        // Revenue bar chart
+        new Chart(document.getElementById('revenueChart'), {
+            type: 'bar',
+            data: {
+                labels: quarters,
+                datasets: [{
+                    label: 'Revenue ($B)',
+                    data: revenue,
+                    backgroundColor: revenue.map((_, i) =>
+                        i === revenue.length - 1 ? 'rgba(167,139,250,0.85)' : 'rgba(167,139,250,0.45)'
+                    ),
+                    borderColor: 'rgba(167,139,250,1)',
+                    borderWidth: 1,
+                    borderRadius: 6,
+                    maxBarThickness: 80
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: ctx => `$${ctx.parsed.y.toFixed(1)}B`
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: false,
+                        min: 80,
+                        grid: { color: '#1e1e1e' },
+                        ticks: {
+                            color: '#888',
+                            callback: v => `$${v}B`
+                        }
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: { color: '#888' }
+                    }
+                }
+            }
+        });
+
+        // Growth line chart
+        new Chart(document.getElementById('growthChart'), {
+            type: 'line',
+            data: {
+                labels: quarters,
+                datasets: [{
+                    label: 'YoY Growth (%)',
+                    data: growth,
+                    borderColor: '#4ade80',
+                    backgroundColor: 'rgba(74,222,128,0.1)',
+                    fill: true,
+                    tension: 0.35,
+                    pointRadius: 5,
+                    pointBackgroundColor: '#4ade80',
+                    pointBorderColor: '#0a0a0a',
+                    pointBorderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: ctx => `+${ctx.parsed.y}% YoY`
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        min: 0,
+                        max: 20,
+                        grid: { color: '#1e1e1e' },
+                        ticks: {
+                            color: '#888',
+                            callback: v => `${v}%`
+                        }
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: { color: '#888' }
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>
